@@ -44,13 +44,13 @@ def make_networkx(road_dict):
 
     pos = nx.spring_layout(G)
     nx.draw_networkx(G, pos=pos, node_color='k')
-    nx.draw_networkx(G, pos=pos, node_size=10)  # draw nodes and edges
+    nx.draw_networkx(G, pos=pos, node_size=800)  # draw nodes and edges
     #nx.draw_networkx_labels(G, pos=pos)  # draw node labels/names
 
     # draw edge weights
-    labels = nx.get_edge_attributes(G, 'weight')
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
-    #plt.axis()
+    #labels = nx.get_edge_attributes(G, 'weight')
+    #nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
+    plt.axis()
     plt.show()
 
 file_name = '../data/demo-4.csv'
