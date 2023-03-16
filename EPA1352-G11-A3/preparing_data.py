@@ -3,6 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import warnings
 import seaborn as sns
+from scipy.spatial.distance import cdist
+import networkx as nx
+import geopandas as gpd
+from shapely.geometry import Point
+from scipy.spatial import cKDTree
 
 warnings.filterwarnings('ignore')
 
@@ -79,19 +84,85 @@ def change_model_type(df_road):
 
     df_road.loc[~df_road['model_type'].str.contains('bridge'), 'model_type'] = 'link'
 
-    df_road['model_type'].iloc[0] = 'sourcesink'
-    df_road['model_type'].iloc[-1] = 'sourcesink'
+    if (df_road['road'] == 'N1').any():
+        df_road['model_type'].iloc[0] = 'sourcesink'
+        df_road['model_type'].iloc[-1] = 'sourcesink'
+    elif (df_road['road'] == 'N2').any():
+        df_road['model_type'].iloc[0] = 'intersection'
+        df_road['model_type'].iloc[-1] = 'sourcesink'
+    elif (df_road['road'] == 'N105').any():
+        df_road['model_type'].iloc[0] = 'intersection'
+        df_road['model_type'].iloc[-1] = 'sourcesink'
+    elif (df_road['road'] == 'N104').any():
+        df_road['model_type'].iloc[0] = 'intersection'
+        df_road['model_type'].iloc[-1] = 'sourcesink'
+    elif (df_road['road'] == 'N106').any():
+        df_road['model_type'].iloc[0] = 'intersection'
+        df_road['model_type'].iloc[-1] = 'sourcesink'
+    else:
+        df_road['model_type'].iloc[0] = 'intersection'
+        df_road['model_type'].iloc[-1] = 'intersection'
 
-def change_to_intersection(df_road):
+def complete_intersections(df_road):
     '''
-    Changes the model_type column to 'intersection' if:
-    1) the model_type column contains the string 'SideRoad', and
-    2) there is a duplicate value in the 'lrp column'
+    Locates the potential points of intersection, where the road type indicates a 'SideRoad'
+    Connects the intersections with the potential intersections with a nearest neighbor method
+    Harmonizes the id's of the found intersection matches for different roads
+    Updates the 'potential intersections' into 'intersection' or back to 'link'
     '''
 
-    double_lrp = df_road.duplicated(subset=['lrp'], keep=False)
-    double_lrp_road = df_road.duplicated(subset=['lrp', 'road'], keep=False)
-    df_road.loc[double_lrp & ~double_lrp_road & df_road['type'].str.contains('SideRoad'), 'model_type'] = 'intersection'
+    df_road.loc[df_road['type'].str.contains('SideRoad', na=False), 'model_type'] = 'potential intersection'
+
+    # Create a GeoDataFrame from the original DataFrame
+    gdf_road = gpd.GeoDataFrame(df_road, geometry=gpd.points_from_xy(df_road['lon'], df_road['lat']))
+
+    # Filter the GeoDataFrame to only include points with model_type = 'intersection'
+    intersection_points = gdf_road[gdf_road['model_type'] == 'intersection']
+    potential_points = gdf_road[gdf_road['model_type'] == 'potential intersection']
+
+    # Between these two dataframes, the potential_points needs to get a column that contains the road_id of the intersection_poins, if a match is found (mostly does not happen)
+
+    gdf_check = ckdnearest(intersection_points, potential_points)
+    print(gdf_check)
+    gdf_check.to_csv('check_dist.csv')
+
+
+
+def ckdnearest(gdA, gdB):
+    '''
+    Voorbeeldsite: ??
+
+
+    Uit ChatGPT:
+
+    This function ckdnearest(gdA, gdB) appears to perform a nearest neighbor search between two sets of spatial data represented as GeoDataFrames using the cKDTree algorithm from the scipy library. The input gdA and gdB are two GeoDataFrames with geometry columns containing Point objects.
+
+    The function first extracts the coordinates of the Point objects from gdA and gdB using a lambda function and the apply method, and then constructs a KD-tree (btree) from the coordinates in gdB using cKDTree.
+
+    The query method of the KD-tree is used to find the nearest neighbor of each point in gdA. The k parameter is set to 1 to return the closest neighbor. The method returns two arrays, dist and idx, where dist contains the distances between the nearest neighbors, and idx contains the indices of the nearest neighbors in gdB.
+
+    The function then creates a new GeoDataFrame (gdf) by concatenating gdA, the nearest neighbors in gdB (gdB_nearest), and the distance between them (dist). The loc method is used to select only certain columns from gdB (nearest_information), and the reset_index method is used to reset the index of gdB_nearest.
+
+    Finally, the function returns the new GeoDataFrame gdf.
+    '''
+
+    nearest_information = ['road_id', 'id', 'model_type']
+
+    nA = np.array(list(gdA.geometry.apply(lambda x: (x.x, x.y))))
+    nB = np.array(list(gdB.geometry.apply(lambda x: (x.x, x.y))))
+    btree = cKDTree(nB)
+    dist, idx = btree.query(nA, k=1)
+    #gdB_nearest = gdB.iloc[idx].drop(columns="geometry").reset_index(drop=True)
+    gdB_nearest = gdB.iloc[idx][nearest_information].reset_index(drop=True)
+    gdf = pd.concat(
+        [
+            gdA.reset_index(drop=True),
+            gdB_nearest,
+            pd.Series(dist, name='dist')
+        ],
+        axis=1)
+
+    return gdf
 
 def standardize_bridges(df_road):
     """
@@ -185,61 +256,14 @@ def get_road_name(df_road):
     '''
     df_road['road_name'] = 'Unknown'
 
-def make_id(df_road):
-    '''
-    Generates an unique id for each road, with each new road a big jump
-    '''
-    #road_id_dict = {}
-    #road_id = 1000000
-    #for i in relevant_roads:
-        #road_id_dict[i] = road_id
-        #road_id += 1000000
-
-    #print(road_id_dict)
-
-    #print(df_road['road'][0])
-    #print(road_id_dict['N1'])
-    #unique_id = road_id_dict[df_road['road'][0]]
-    #print(f'Here we print the unique_id: {unique_id}')
-
-    unique_id = 1000000
-    for i in range(len(df_road['id_jump'])):
-        df_road.loc[i, 'id_jump'] = unique_id
-        unique_id += 1
-
 def make_id_once(df_road):
     '''
     Generates a unique id for each road, with big jumps between two roads
     '''
-    '''
     unique_id = 1000000
-    unique_roads = df_road['road'].unique()
-    print(unique_roads)
-    for i in unique_roads:
-        if (df_road['road'] == i).any():
-            df_road.loc[df_road['road'] == i, 'id_continuous'] = unique_id
-            unique_id += 1
-        else:
-            unique_id += 1000000
-
-            #unique_id = (i + 1) * 1000000
-    '''
-    unique_id = 1000000
-    for i in range(len(df_road['id'])):
+    for i in range(df_road.shape[0]):
         df_road.loc[i, 'id'] = unique_id
         unique_id += 1
-
-
-    #road_id_dict = {}
-    #road_id = 1000000
-    #for i in relevant_roads:
-    #    road_id_dict[i] = road_id
-    #    road_id += 1000000
-
-    #unique_id = 1000000
-    #for i in range(len(df_road['id_continuous'])):
-    #    df_road.loc[i, 'id_continuous'] = unique_id
-    #    unique_id += 1
 
 list_all_roads = []
 def collect_roads(df_road):
@@ -262,7 +286,6 @@ def prepare_data(df_road):
     get_length(df_road)
     get_name(df_road)
     get_road_name(df_road)
-    #make_id(df_road)
     collect_roads(df_road)
 
 def make_figure(df):
@@ -277,7 +300,7 @@ def make_figure(df):
 
 def combine_data():
     '''
-    Combines all the seperate dataframes from all the roads
+    Combines all the separate dataframes from all the roads
     '''
     df_all_roads = pd.DataFrame(columns=column_names)  # initialize empty dataframe
 
@@ -286,8 +309,10 @@ def combine_data():
     for df in list_all_roads:
         df_all_roads = pd.concat([df_all_roads, df])  # append to df_all_roads in each iteration
 
+    df_all_roads = df_all_roads.reset_index()
+
     make_id_once(df_all_roads)
-    change_to_intersection(df_all_roads)
+    complete_intersections(df_all_roads)
     make_figure(df_all_roads)
     save_data(df_all_roads)
     #make_upperbound(df_all_roads)
@@ -324,18 +349,3 @@ def make_upperbound(df):
 # Run the prepare data function
 filter_roads() # calls prepare_data function
 combine_data()
-
-def validate_bridges():
-    '''
-    Generates dataframes to check the statistics of the BMMS file with the two different sorting methods
-    '''
-    df_BMMS_LB = df_bridges.drop_duplicates(subset='bridge_id', keep='first')
-    df_BMMS_UB = df_bridges.drop_duplicates(subset='bridge_id', keep='last')
-
-    df_BMMS_LB.to_excel('./data/BMMS_LB.xlsx')
-    df_BMMS_UB.to_excel('./data/BMMS_UB.xlsx')
-
-    df_bridgesN1 = df_bridges[df_bridges['road'] == 'N1']
-
-    # sns.lmplot(x='lon', y='lat', data=df_bridgesN1, fit_reg=False, scatter_kws={"s": 1})
-    # plt.show()
