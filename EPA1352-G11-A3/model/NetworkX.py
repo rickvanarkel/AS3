@@ -18,12 +18,14 @@ def make_points_edges(df):
         temp_points = []
         temp_edges = []
         temp_df.reset_index(inplace = True)
+        temp_id = 0
 
         for index, row in temp_df.iterrows():
             temp_points.append((row['lon'], row['lat']))
             point_ids.append(row['id'])
             if index != 0:
-                temp_edges.append((row['id']-1, row['id'], row['length']))
+                temp_edges.append((temp_id, row['id'], row['length']))
+            temp_id = row['id']
 
         road_dict[road_type] = (temp_points, temp_edges, point_ids)
 
