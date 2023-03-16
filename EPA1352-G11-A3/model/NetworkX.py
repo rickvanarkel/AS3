@@ -10,39 +10,42 @@ def add_edge_to_graph(G, e1, e2, w):
 def make_points_edges(df):
     road_dict = {}
     roads = df['road'].unique()
-    point_num = 0
-    total_length = 0
+
 
     for road_type in roads:
         temp_df =  df.loc[df['road'] == road_type]
+        point_ids = []
         temp_points = []
         temp_edges = []
-        df_length = temp_df.shape[0]
+        temp_df.reset_index(inplace = True)
 
         for index, row in temp_df.iterrows():
             temp_points.append((row['lon'], row['lat']))
-            if point_num != 0 and point_num != total_length:
-                temp_edges.append((point_num-1, point_num, row['length']))
-            point_num += 1
-        road_dict[road_type] = (temp_points, temp_edges)
-        total_length += df_length
+            point_ids.append(row['id'])
+            if index != 0:
+                temp_edges.append((row['id']-1, row['id'], row['length']))
+
+        road_dict[road_type] = (temp_points, temp_edges, point_ids)
+
     return road_dict
 
 def make_networkx(road_dict):
     G = nx.Graph()
-    edges_num = 0
 
     for roads in df['road'].unique():
         temp_list = road_dict[roads]
-
         points = temp_list[0]
         edges = temp_list[1]
-        edges_num += len(edges)
+        print(edges)
+        point_ids = temp_list[2]
+
+        for i in range(len(point_ids)):
+            G.add_node(point_ids[i], pos=points[i])
 
         for i in range(len(edges)):
-            add_edge_to_graph(G, points[edges[i][0]-edges[0][0]], points[edges[i][1]-edges[0][0]], edges[i][2])
+            G.add_edge(edges[i][0], edges[i][1], weight = edges[i][2])
 
-    pos = nx.spring_layout(G)
+    pos = nx.get_node_attributes(G, 'pos')
     nx.draw_networkx(G, pos=pos, node_color='k')
     nx.draw_networkx(G, pos=pos, node_size=800)  # draw nodes and edges
     #nx.draw_networkx_labels(G, pos=pos)  # draw node labels/names
