@@ -22,6 +22,8 @@ def filter_roads():
     change_column_names(df_roads)
     unique_roads = df_roads.road.unique()
 
+    print('All relevant roads are being identified based on length and the casus.')
+
     short_roads = []
     for i in unique_roads:
         df_road_temp = df_roads[df_roads['road'] == i]
@@ -29,6 +31,8 @@ def filter_roads():
             short_roads.append(i)
 
     casus_roads = ['N1', 'N2']
+
+    global relevant_roads
     relevant_roads = []
     for i in short_roads:
         df_road_temp = df_roads[df_roads['road'] == i]
@@ -36,9 +40,11 @@ def filter_roads():
             if df_road_temp['road'].str.contains(j).any():
                 relevant_roads.append(i)
 
-    print(relevant_roads)
+    print(f'In total there are {len(relevant_roads)} relevant roads found, which are: {relevant_roads}.')
+    print(f'The pre-processing of each road is done separately.')
 
     for i in relevant_roads:
+        print(f'The road that is pre-processed now, is: {i}.')
         df_road_temp = df_roads[df_roads['road'] == i]
         prepare_data(df_road_temp)
 
@@ -49,6 +55,7 @@ def change_column_names(df_road):
     df_road['model_type'] = ''
     df_road['length'] = np.nan
     df_road['id'] = ''
+    df_road['id_jump'] = ''
     df_road['name'] = ''
     df_road['condition'] = np.nan
     df_road['road_name'] = ''
@@ -75,6 +82,17 @@ def change_model_type(df_road):
     df_road['model_type'].iloc[0] = 'sourcesink'
     df_road['model_type'].iloc[-1] = 'sourcesink'
 
+def change_to_intersection(df_road):
+    '''
+    Changes the model_type column to 'intersection' if:
+    1) the model_type column contains the string 'SideRoad', and
+    2) there is a duplicate value in the 'lrp column'
+    '''
+
+    double_lrp = df_road.duplicated(subset=['lrp'], keep=False)
+    double_lrp_road = df_road.duplicated(subset=['lrp', 'road'], keep=False)
+    df_road.loc[double_lrp & ~double_lrp_road & df_road['type'].str.contains('SideRoad'), 'model_type'] = 'intersection'
+
 def standardize_bridges(df_road):
     """
     Since some bridges have >1 LRPs, we only model for every bridge one delay,
@@ -97,7 +115,6 @@ def standardize_bridges(df_road):
 
 def make_infra_id(df_road):
     # Make bridge_id and road_id based on road and LRP
-    # WORDT MOEILIJKER: VOOR ELKE ROAD NIEUW STARTNUMMER
     df_road['road_id'] = df_road['road'] + df_road['lrp']
     df_bridges['bridge_id'] = df_bridges['road'] + df_bridges['LRPName']
 
@@ -170,12 +187,59 @@ def get_road_name(df_road):
 
 def make_id(df_road):
     '''
-    Generates an unique id for each road
+    Generates an unique id for each road, with each new road a big jump
+    '''
+    #road_id_dict = {}
+    #road_id = 1000000
+    #for i in relevant_roads:
+        #road_id_dict[i] = road_id
+        #road_id += 1000000
+
+    #print(road_id_dict)
+
+    #print(df_road['road'][0])
+    #print(road_id_dict['N1'])
+    #unique_id = road_id_dict[df_road['road'][0]]
+    #print(f'Here we print the unique_id: {unique_id}')
+
+    unique_id = 1000000
+    for i in range(len(df_road['id_jump'])):
+        df_road.loc[i, 'id_jump'] = unique_id
+        unique_id += 1
+
+def make_id_once(df_road):
+    '''
+    Generates a unique id for each road, with big jumps between two roads
+    '''
+    '''
+    unique_id = 1000000
+    unique_roads = df_road['road'].unique()
+    print(unique_roads)
+    for i in unique_roads:
+        if (df_road['road'] == i).any():
+            df_road.loc[df_road['road'] == i, 'id_continuous'] = unique_id
+            unique_id += 1
+        else:
+            unique_id += 1000000
+
+            #unique_id = (i + 1) * 1000000
     '''
     unique_id = 1000000
     for i in range(len(df_road['id'])):
         df_road.loc[i, 'id'] = unique_id
         unique_id += 1
+
+
+    #road_id_dict = {}
+    #road_id = 1000000
+    #for i in relevant_roads:
+    #    road_id_dict[i] = road_id
+    #    road_id += 1000000
+
+    #unique_id = 1000000
+    #for i in range(len(df_road['id_continuous'])):
+    #    df_road.loc[i, 'id_continuous'] = unique_id
+    #    unique_id += 1
 
 list_all_roads = []
 def collect_roads(df_road):
@@ -198,28 +262,37 @@ def prepare_data(df_road):
     get_length(df_road)
     get_name(df_road)
     get_road_name(df_road)
-    make_id(df_road)
+    #make_id(df_road)
     collect_roads(df_road)
 
 def make_figure(df):
     '''
-    Makes a plot of the N1, with different colors for the model type (source, link, bridge, sink)
+    Makes a plot of the relevant roads,
+    with different colors for the model type (source, link, bridge, sink),
+    or for the different roads
     '''
-    # CHANGE FOR TOTAL NETWORK
-    sns.lmplot(x='lon', y='lat', data=df, hue='model_type', fit_reg=False, scatter_kws={"s": 1})
+    sns.lmplot(x='lon', y='lat', data=df, hue='road', fit_reg=False, scatter_kws={"s": 1}) # hue='model_type'
+    sns.lmplot(x='lon', y='lat', data=df, hue='model_type', fit_reg=False, scatter_kws={"s": 1})  # hue='model_type'
     plt.show()
-def combine_data():
-    #df_all_roads_temp = pd.DataFrame(columns=column_names)
-    #print(df_all_roads_temp)
 
-    df_all_roads = pd.DataFrame(columns=column_names)  # initialize empty dataframe outside of function
+def combine_data():
+    '''
+    Combines all the seperate dataframes from all the roads
+    '''
+    df_all_roads = pd.DataFrame(columns=column_names)  # initialize empty dataframe
+
+    print('All roads are pre-processed. The seperate files are being combined, completed and presented (figure and csv exports).')
 
     for df in list_all_roads:
         df_all_roads = pd.concat([df_all_roads, df])  # append to df_all_roads in each iteration
 
+    make_id_once(df_all_roads)
+    change_to_intersection(df_all_roads)
     make_figure(df_all_roads)
     save_data(df_all_roads)
     #make_upperbound(df_all_roads)
+
+    print('The data is pre-processed and available for the next step.')
 
 model_columns = ['road', 'id', 'model_type', 'name', 'lat', 'lon', 'length', 'condition', 'bridge_length'] # 'road_name'
 def save_data(df):
