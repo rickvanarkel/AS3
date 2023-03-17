@@ -1,4 +1,4 @@
-,index,road,chainage,lrp,lat,lon,gap,type,name,model_type,length,id,id_jump,condition,road_name,bridge_length,road_id,road_id_sliced,geometry,road_id,id,model_type,dist
+,index,road,chainage,lrp,lat,lon,gap,type,name,model_type_potential,length,id_potential,id_jump,condition,road_name,bridge_length,road_id_potential,road_id_sliced,geometry,road_id_potential,id_potential,model_type_potential,dist
 0,1356,N102,0.0,LRPS,23.4789716,91.1181938,,Others,intersection,intersection,,1001339,,,Unknown,,N102LRPS,N102LRPS,POINT (91.1181938 23.4789716),N1LRP084a,1000185,potential intersection,2.779999999802385e-05
 1,1574,N102,82.682,LRPE,24.0506111,91.1146667,,Others,intersection,intersection,549.0000000000066,1001557,,,Unknown,,N102LRPE,N102LRPE,POINT (91.1146667 24.0506111),N2LRP086a,1002238,potential intersection,0.0003143089721941751
 2,1587,N104,0.0,LRPS,23.0096667,91.3994163,,Others,intersection,intersection,,1001558,,,Unknown,,N104LRPS,N104LRPS,POINT (91.3994163 23.0096667),N1LRP152a,1000341,potential intersection,0.02431370313588667

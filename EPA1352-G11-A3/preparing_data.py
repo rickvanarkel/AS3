@@ -122,9 +122,37 @@ def complete_intersections(df_road):
 
     # Between these two dataframes, the potential_points needs to get a column that contains the road_id of the intersection_poins, if a match is found (mostly does not happen)
 
-    gdf_check = ckdnearest(intersection_points, potential_points)
-    print(gdf_check)
-    gdf_check.to_csv('check_dist.csv')
+    gdf_match_intersection = ckdnearest(intersection_points, potential_points)
+
+    '''
+    gdf_match_intersection = gdf_match_intersection.rename(columns={gdf_match_intersection.columns[19]: 'road_id_potential', \
+                                                gdf_match_intersection.columns[20]: 'id_potential', \
+                                                gdf_match_intersection.columns[21]: 'model_type_potential'})
+
+    print(gdf_road.columns)
+    print(gdf_match_intersection.columns)
+
+    # merge dataframes based on col1 and col2
+    merged_df_intersection = pd.merge(gdf_road, gdf_match_intersection, left_on='road_id', right_on=gdf_match_intersection.columns[16], how='left')
+
+    # fill col3 with values from col4 where there is a match
+    merged_df_intersection.loc[merged_df_intersection['road_id'].notnull(), 'road_id'] = merged_df_intersection['road_id_potential']
+
+    # drop col2 and col4
+    #merged_df.drop(['col2', 'col4'], axis=1, inplace=True)
+
+    #odin_df_clean['intern_gebied'] = np.where(odin_df_clean['orig_ind_naam'] == odin_df_clean['dest_ind_naam'], 1, 0)
+
+
+
+    print(merged_df_intersection)
+
+    gdf_combined.to_csv('check_dist.csv')
+    merged_df_intersection.to_csv('check_merge.csv')
+    '''
+
+
+
 
 
 
@@ -152,7 +180,7 @@ def ckdnearest(gdA, gdB):
     nB = np.array(list(gdB.geometry.apply(lambda x: (x.x, x.y))))
     btree = cKDTree(nB)
     dist, idx = btree.query(nA, k=1)
-    #gdB_nearest = gdB.iloc[idx].drop(columns="geometry").reset_index(drop=True)
+
     gdB_nearest = gdB.iloc[idx][nearest_information].reset_index(drop=True)
     gdf = pd.concat(
         [
