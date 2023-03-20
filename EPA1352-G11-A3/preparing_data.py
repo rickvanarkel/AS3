@@ -29,17 +29,17 @@ def filter_roads():
 
     print('All relevant roads are being identified based on length and the casus.')
 
-    short_roads = []
+    long_roads = []
     for i in unique_roads:
         df_road_temp = df_roads[df_roads['road'] == i]
         if df_road_temp["chainage"].iloc[-1] >= 25:
-            short_roads.append(i)
+            long_roads.append(i)
 
     casus_roads = ['N1', 'N2']
 
     global relevant_roads
     relevant_roads = []
-    for i in short_roads:
+    for i in long_roads:
         df_road_temp = df_roads[df_roads['road'] == i]
         for j in casus_roads:
             if df_road_temp['road'].str.contains(j).any():
@@ -118,11 +118,53 @@ def complete_intersections(df_road):
 
     # Filter the GeoDataFrame to only include points with model_type = 'intersection'
     intersection_points = gdf_road[gdf_road['model_type'] == 'intersection']
+    intersection_points = intersection_points.drop(['id'], axis = 1)
+
     potential_points = gdf_road[gdf_road['model_type'] == 'potential intersection']
+    potential_points = potential_points.drop(['road_id'], axis=1)
 
     # Between these two dataframes, the potential_points needs to get a column that contains the road_id of the intersection_poins, if a match is found (mostly does not happen)
 
     gdf_match_intersection = ckdnearest(intersection_points, potential_points)
+
+    #gdf_match_intersection.reset_index()
+
+    #for road in df_road.iterrows():
+    #    print(road)
+
+    list_of_ids = gdf_match_intersection['id'].tolist()
+    for i in list_of_ids:
+        if (df_road['id'] == i).any():
+            print('hoi')
+            df_road['model_type'].loc[i] = 'intersection2'
+
+    list_of_roads = gdf_match_intersection['road_id'].tolist()
+    road = 0
+    for i in list_of_roads:
+        if (df_road['road_id'] == i).any():
+            df_road['id'].loc[i] = list_of_ids[road]
+        road += 1
+
+    print(df_road)
+
+    save_data(df_road)
+
+    '''
+    for road in df_road.iterrows():
+        if road['id'].isin(gdf_match_intersection['id']).any():
+            road['model_type'] = 'intersection'
+
+    for index, road in df_road.iterrows():
+        if df_road['road_id'].isin(gdf_match_intersection['road_id']).any():
+            df_road.loc[index, 'id'] = int(gdf_match_intersection.loc[gdf_match_intersection['road_id'] == df_road['road_id'], 'id'])
+
+    for index, road in df_road  .iterrows():
+        if road['road_id'].isin(gdf_match_intersection['road_id']):
+            df_road.loc[index, 'model_type'] = 'intersection'
+
+    '''
+
+    gdf_match_intersection.to_csv('check_dist.csv')
 
     '''
     gdf_match_intersection = gdf_match_intersection.rename(columns={gdf_match_intersection.columns[19]: 'road_id_potential', \
@@ -174,7 +216,7 @@ def ckdnearest(gdA, gdB):
     Finally, the function returns the new GeoDataFrame gdf.
     '''
 
-    nearest_information = ['road_id', 'id', 'model_type']
+    nearest_information = ['id', 'model_type'] # 'road_id',
 
     nA = np.array(list(gdA.geometry.apply(lambda x: (x.x, x.y))))
     nB = np.array(list(gdB.geometry.apply(lambda x: (x.x, x.y))))
