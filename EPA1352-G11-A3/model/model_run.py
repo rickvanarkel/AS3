@@ -40,6 +40,7 @@ for i in range(nscenario):
     df_list.set_index("run", inplace=True)
     for k in range(niteration):
         df_list = run_iteration(i, df_list, run_length)
+        print(f"This was iteration {k} of scenrio {i}")
     #Change this depending on the input CSV dataset that was used in the model file
     df_list.to_csv(f'../data/scenario{i}.csv')
 

@@ -31,7 +31,7 @@ class Infra(Agent):
         pass
 
     def __str__(self):
-        return type(self).__name__ + str(self.unique_id)
+        pass #return type(self).__name__ + str(self.unique_id)
 
 
 # ---------------------------------------------------------------
@@ -101,7 +101,7 @@ class Sink(Infra):
     def remove(self, vehicle):
         self.model.schedule.remove(vehicle)
         self.vehicle_removed_toggle = not self.vehicle_removed_toggle
-        print(str(self) + ' REMOVE ' + str(vehicle))
+        #print(str(self) + ' REMOVE ' + str(vehicle))
 
 
 # ---------------------------------------------------------------
@@ -148,7 +148,7 @@ class Source(Infra):
                 Source.truck_counter += 1
                 self.vehicle_count += 1
                 self.vehicle_generated_flag = True
-                print(str(self) + " GENERATE " + str(agent))
+                #print(str(self) + " GENERATE " + str(agent))
         except Exception as e:
             print("Oops!", e.__class__, "occurred.")
 
@@ -231,10 +231,11 @@ class Vehicle(Agent):
         self.removed_at_step = None
 
     def __str__(self):
-        return "Vehicle" + str(self.unique_id) + \
-               " +" + str(self.generated_at_step) + " -" + str(self.removed_at_step) + \
-               " " + str(self.state) + '(' + str(self.waiting_time) + ') ' + \
-               str(self.location) + '(' + str(self.location.vehicle_count) + ') ' + str(self.location_offset)
+        pass
+        # return "Vehicle" + str(self.unique_id) + \
+        #        " +" + str(self.generated_at_step) + " -" + str(self.removed_at_step) + \
+        #        " " + str(self.state) + '(' + str(self.waiting_time) + ') ' + \
+        #        str(self.location) + '(' + str(self.location.vehicle_count) + ') ' + str(self.location_offset)
 
     def set_path(self):
         """
@@ -258,7 +259,7 @@ class Vehicle(Agent):
         """
         To print the vehicle trajectory at each step
         """
-        print(self)
+        #print(self)
 
     def drive(self):
 

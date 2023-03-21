@@ -38,7 +38,6 @@ def make_networkx(road_dict):
         temp_list = road_dict[roads]
         points = temp_list[0]
         edges = temp_list[1]
-        print(edges)
         point_ids = temp_list[2]
 
         for i in range(len(point_ids)):
@@ -58,7 +57,7 @@ def make_networkx(road_dict):
     plt.axis()
     plt.show()
 
-file_name = '../data/demo_all_roads_compact_LB.csv'
+file_name = '../data/demo-4.csv'
 df = pd.read_csv(file_name)
 
 road_dict = make_points_edges(df)
