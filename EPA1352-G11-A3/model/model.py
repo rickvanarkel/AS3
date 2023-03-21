@@ -168,8 +168,7 @@ class BangladeshModel(Model):
                 break
         return self.path_ids_dict[source, sink]
 
-    def calculate_shortest_path(self):
-
+    # TODO
     def get_route(self, source):
         return self.get_straight_route(source)
 
