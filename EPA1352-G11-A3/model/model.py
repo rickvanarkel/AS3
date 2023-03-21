@@ -4,6 +4,8 @@ from mesa.space import ContinuousSpace
 from components import Source, Sink, SourceSink, Bridge, Link, Intersection
 import pandas as pd
 from collections import defaultdict
+import random
+import NetworkX as NX
 
 
 # ---------------------------------------------------------------
@@ -57,7 +59,8 @@ class BangladeshModel(Model):
 
     file_name = '../data/demo-4.csv'
 
-    def __init__(self, seed=None, x_max=500, y_max=500, x_min=0, y_min=0):
+
+    def __init__(self, seed=None, x_max=500, y_max=500, x_min=0, y_min=0, scenario = 1):
 
         self.schedule = BaseScheduler(self)
         self.running = True
@@ -65,6 +68,17 @@ class BangladeshModel(Model):
         self.space = None
         self.sources = []
         self.sinks = []
+
+        global truck_counter
+        truck_counter = 0
+
+        self.reporter = pd.DataFrame(columns=["Name", "Time"])
+        self.reporter.set_index("Name", inplace=True)
+
+        '''
+        Creates a parameter for setting the scenario number!
+        '''
+        self.scenario = scenario
 
         self.generate_model()
 
@@ -76,10 +90,24 @@ class BangladeshModel(Model):
         """
 
         df = pd.read_csv(self.file_name)
+        road_dict = NX.make_points_edges(df)
+        G = NX.make_networkx(road_dict)
 
-        # a list of names of roads to be generated
-        # TODO You can also read in the road column to generate this list automatically
-        roads = ['N1', 'N2']
+        # a list of names of roads to be generated based on the different unique values in the "Road" column of the df
+        roads = df['road'].unique()
+
+        """
+        self.scenario_dict creates a dictionary containing dictionaries for all 
+        the different scenario's this way we can easily and efficiently select 
+        which parameters for the bridge quality should be used. 
+        """
+        self.scenario_dict = {
+            0: {'A': 0, 'B': 0, 'C': 0, 'D': 0},
+            1: {'A': 0, 'B': 0, 'C': 0, 'D': 5},
+            2: {'A': 0, 'B': 0, 'C': 5, 'D': 10},
+            3: {'A': 0, 'B': 5, 'C': 10, 'D': 20},
+            4: {'A': 5, 'B': 10, 'C': 20, 'D': 40},
+        }
 
         df_objects_all = []
         for road in roads:
@@ -143,7 +171,19 @@ class BangladeshModel(Model):
                     self.sources.append(agent.unique_id)
                     self.sinks.append(agent.unique_id)
                 elif model_type == 'bridge':
-                    agent = Bridge(row['id'], self, row['length'], name, row['road'], row['condition'])
+                    '''
+                    This part makes sure that bridge are created based on the data set. Each run has a
+                    certain scenario, and each bridge has a condition. This results in a certain chance
+                    of the bridge collapsing and causing a delay. The state on the bridge (either intact or broken)
+                    is added as an attribute to the bridge.
+                    '''
+                    runscenario_dict = self.scenario_dict[self.scenario]
+                    cat_probability = runscenario_dict[row['condition']]
+                    if random.randint(0, 100) > cat_probability:
+                        state = 'intact'
+                    else:
+                        state = 'broken'
+                    agent = Bridge(row['id'], self, row['bridge_length'], row['name'], row['road'], state)
                 elif model_type == 'link':
                     agent = Link(row['id'], self, row['length'], name, row['road'])
                 elif model_type == 'intersection':
