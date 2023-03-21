@@ -135,17 +135,16 @@ def complete_intersections(df_road):
     list_of_ids = gdf_match_intersection['id'].tolist()
     for i in list_of_ids:
         if (df_road['id'] == i).any():
-            print('hoi')
-            df_road['model_type'].loc[i] = 'intersection2'
+            df_road.loc[df_road['id'] == i, 'model_type'] = 'intersection'
 
     list_of_roads = gdf_match_intersection['road_id'].tolist()
     road = 0
     for i in list_of_roads:
         if (df_road['road_id'] == i).any():
-            df_road['id'].loc[i] = list_of_ids[road]
+            df_road.loc[df_road['road_id'] == i, 'id'] = list_of_ids[road]
         road += 1
 
-    print(df_road)
+    df_road = df_road.replace('potential intersection', 'link')
 
     save_data(df_road)
 
