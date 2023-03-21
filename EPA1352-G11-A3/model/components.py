@@ -288,6 +288,7 @@ class Vehicle(Agent):
             # arrive at the sink
             self.arrive_at_next(next_infra, 0)
             self.removed_at_step = self.model.schedule.steps
+            self.model.reporter.loc[self.unique_id] = [self.removed_at_step - self.generated_at_step]
             self.location.remove(self)
             return
         elif isinstance(next_infra, Bridge):
