@@ -129,6 +129,9 @@ def complete_intersections(df_road):
     for i in list_of_ids:
         if (df_road['id'] == i).any():
             df_road.loc[df_road['id'] == i, 'model_type'] = 'intersection'
+            df_road.loc[df_road['id'] == i, 'lon'] = gdf_match_intersection.loc[gdf_match_intersection['id'] == i, 'lon'].values[0]
+            df_road.loc[df_road['id'] == i, 'lat'] = gdf_match_intersection.loc[gdf_match_intersection['id'] == i, 'lat'].values[0]
+
 
     list_of_roads = gdf_match_intersection['road_id'].tolist()
     road = 0
@@ -138,6 +141,18 @@ def complete_intersections(df_road):
         road += 1
 
     df_road.loc[df_road['model_type'].str.contains('potential intersection', na=False), 'model_type'] = 'link'
+
+    sosicounter = 1
+    for i, row in df_road.iterrows():
+        if row['name'] != 'sourcesink':
+            df_road.at[i, 'name'] = ''
+        else:
+            df_road.at[i, 'name'] = f'SoSi{sosicounter}'
+            sosicounter += 1
+
+    print(df_road['name'].head(20))
+
+
     gdf_match_intersection.to_csv('check_dist.csv')
 
 def ckdnearest(gdA, gdB):
