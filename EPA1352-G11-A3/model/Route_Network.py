@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 
 def add_edge_to_graph(G, e1, e2, w):
     G.add_edge(e1, e2, weight=w)
+
 def make_points_edges(df):
     road_dict = {}
     roads = df['road'].unique()
-
 
     for road_type in roads:
         temp_df =  df.loc[df['road'] == road_type]
@@ -26,26 +26,20 @@ def make_points_edges(df):
             if index != 0:
                 temp_edges.append((temp_id, row['id'], row['length']))
             temp_id = row['id']
-
         road_dict[road_type] = (temp_points, temp_edges, point_ids)
-
     return road_dict
 
 def make_networkx(road_dict, df):
     G = nx.Graph()
-
     for roads in df['road'].unique():
         temp_list = road_dict[roads]
         points = temp_list[0]
         edges = temp_list[1]
         point_ids = temp_list[2]
-
         for i in range(len(point_ids)):
             G.add_node(point_ids[i], pos=points[i])
-
         for i in range(len(edges)):
             G.add_edge(edges[i][0], edges[i][1], weight = edges[i][2])
-
     return G
 
 def create_graph(G):

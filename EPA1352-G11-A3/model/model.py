@@ -195,7 +195,6 @@ class BangladeshModel(Model):
             self.path_ids_dict[(sink, source)] = route
         else:
             route = self.path_ids_dict[(sink, source)]
-        print(self.path_ids_dict)
         return route
 
     def step(self):
