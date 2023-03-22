@@ -96,7 +96,7 @@ class BangladeshModel(Model):
         """
 
         # Reimport the CSV file as a new dictionary
-        scenario_df = pd.read_csv('../scenario_dict.csv', index_col='Scenario')
+        scenario_df = pd.read_csv('../data/scenario_dict.csv', index_col='Scenario')
         for scenario, row in scenario_df.iterrows():
             self.scenario_dict[scenario] = row.to_dict()
 
