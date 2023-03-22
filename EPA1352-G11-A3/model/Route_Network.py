@@ -46,22 +46,24 @@ def make_networkx(road_dict, df):
         for i in range(len(edges)):
             G.add_edge(edges[i][0], edges[i][1], weight = edges[i][2])
 
+    return G
+
+def create_graph(G):
     pos = nx.get_node_attributes(G, 'pos')
-    nx.draw_networkx(G, pos=pos, node_color='k')
-    nx.draw_networkx(G, pos=pos, node_size=800)  # draw nodes and edges
+    nx.draw_networkx(G, pos=pos, node_color='k', with_labels=False)
+    nx.draw_networkx(G, pos=pos, node_size=10, with_labels=False) # draw nodes and edges
     #nx.draw_networkx_labels(G, pos=pos)  # draw node labels/names
 
     # draw edge weights
-    #labels = nx.get_edge_attributes(G, 'weight')
-    #nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
+    # labels = nx.get_edge_attributes(G, 'weight')
+    # nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
     plt.axis()
     plt.show()
 
-    return G
-
-# file_name = '../data/demo-4.csv'
+# file_name = '../data/demo_all_roads_compact_LB.csv'
 # df = pd.read_csv(file_name)
 #
 # road_dict = make_points_edges(df)
-# G = make_networkx(road_dict)
+# G = make_networkx(road_dict, df)
+# create_graph(G)
 

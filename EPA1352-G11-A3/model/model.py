@@ -6,8 +6,6 @@ import pandas as pd
 from collections import defaultdict
 import random
 import networkx as nx
-from Route_Network import make_points_edges
-from Route_Network import make_networkx
 
 
 # ---------------------------------------------------------------
@@ -59,17 +57,18 @@ class BangladeshModel(Model):
 
     step_time = 1
 
-    file_name = '../data/demo-4.csv'
 
-
-    def __init__(self, seed=None, x_max=500, y_max=500, x_min=0, y_min=0, scenario = 1):
+    def __init__(self, seed=None, x_max=500, y_max=500, x_min=0, y_min=0, scenario = 0, G= None, filename= None):
 
         self.schedule = BaseScheduler(self)
         self.running = True
-        #self.path_ids_dict = defaultdict(lambda: pd.Series())
+        self.path_ids_dict = defaultdict(lambda: pd.Series())
         self.space = None
         self.sources = []
         self.sinks = []
+        self.scenario_dict = {}
+        self.G = G
+        self.file_name= filename
 
         self.reporter = pd.DataFrame(columns=["Name", "Time"])
         self.reporter.set_index("Name", inplace=True)
@@ -89,8 +88,6 @@ class BangladeshModel(Model):
         """
 
         df = pd.read_csv(self.file_name)
-        road_dict = make_points_edges(df)
-        self.G = make_networkx(road_dict, df)
 
         # a list of names of roads to be generated based on the different unique values in the "Road" column of the df
         roads = df['road'].unique()
@@ -100,13 +97,11 @@ class BangladeshModel(Model):
         the different scenario's this way we can easily and efficiently select 
         which parameters for the bridge quality should be used. 
         """
-        self.scenario_dict = {
-            0: {'A': 0, 'B': 0, 'C': 0, 'D': 0},
-            1: {'A': 0, 'B': 0, 'C': 0, 'D': 5},
-            2: {'A': 0, 'B': 0, 'C': 5, 'D': 10},
-            3: {'A': 0, 'B': 5, 'C': 10, 'D': 20},
-            4: {'A': 5, 'B': 10, 'C': 20, 'D': 40},
-        }
+
+        # Reimport the CSV file as a new dictionary
+        scenario_df = pd.read_csv('../scenario_dict.csv', index_col='Scenario')
+        for scenario, row in scenario_df.iterrows():
+            self.scenario_dict[scenario] = row.to_dict()
 
         df_objects_all = []
         for road in roads:
@@ -115,22 +110,7 @@ class BangladeshModel(Model):
         #
              if not df_objects_on_road.empty:
                  df_objects_all.append(df_objects_on_road)
-        #
-        #         """
-        #         Set the path
-        #         1. get the serie of object IDs on a given road in the cvs in the original order
-        #         2. add the (straight) path to the path_ids_dict
-        #         3. put the path in reversed order and reindex
-        #         4. add the path to the path_ids_dict so that the vehicles can drive backwards too
-        #         """
-        #         path_ids = df_objects_on_road['id']
-        #         path_ids.reset_index(inplace=True, drop=True)
-        #         self.path_ids_dict[path_ids[0], path_ids.iloc[-1]] = path_ids
-        #         self.path_ids_dict[path_ids[0], None] = path_ids
-        #         path_ids = path_ids[::-1]
-        #         path_ids.reset_index(inplace=True, drop=True)
-        #         self.path_ids_dict[path_ids[0], path_ids.iloc[-1]] = path_ids
-        #         self.path_ids_dict[path_ids[0], None] = path_ids
+
 
         # put back to df with selected roads so that min and max and be easily calculated
         df = pd.concat(df_objects_all)
@@ -208,12 +188,14 @@ class BangladeshModel(Model):
 
         return sink
 
-    # TODO
     def get_route(self, source):
-
         sink = self.get_random_route(source)
-        route = nx.shortest_path(self.G, source=source, target=sink, method='dijkstra')
-
+        if (sink, source) not in self.path_ids_dict:
+            route = nx.shortest_path(self.G, source=source, target=sink, method='dijkstra')
+            self.path_ids_dict[(sink, source)] = route
+        else:
+            route = self.path_ids_dict[(sink, source)]
+        print(self.path_ids_dict)
         return route
 
     def step(self):
