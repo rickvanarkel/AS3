@@ -141,17 +141,6 @@ def complete_intersections(df_road):
 
     df_road.loc[df_road['model_type'].str.contains('potential intersection', na=False), 'model_type'] = 'link'
 
-    sosicounter = 1
-    for i, row in df_road.iterrows():
-        if row['name'] != 'sourcesink':
-            df_road.at[i, 'name'] = ''
-        else:
-            df_road.at[i, 'name'] = f'SoSi{sosicounter}'
-            sosicounter += 1
-
-    print(df_road['name'].head(20))
-
-
     gdf_match_intersection.to_csv('check_dist.csv')
 
 def ckdnearest(gdA, gdB):
@@ -274,7 +263,16 @@ def get_name(df_road):
     '''
     Fills in the name of the road part, based on the model type
     '''
-    df_road['name'] = df_road['model_type']
+    #df_road['name'] = df_road['model_type']
+
+    sosicounter = 1
+    for i, row in df_road.iterrows():
+        if row['model_type'] != 'sourcesink':
+            df_road.at[i, 'name'] = ''
+        else:
+            df_road.at[i, 'name'] = f'SoSi{sosicounter}'
+            sosicounter += 1
+            print(sosicounter)
 
 def get_road_name(df_road):
     '''
@@ -310,7 +308,6 @@ def prepare_data(df_road):
     connect_infra(df_bridges, df_road) # also calls for fill_in_infra() within the function
     bridge_to_link(df_road)
     get_length(df_road)
-    get_name(df_road)
     get_road_name(df_road)
     collect_roads(df_road)
 
@@ -320,8 +317,8 @@ def make_figure(df):
     with different colors for the model type (source, link, bridge, sink),
     or for the different roads
     '''
-    sns.lmplot(x='lon', y='lat', data=df, hue='road', fit_reg=False, scatter_kws={"s": 1}) # hue='model_type'
-    sns.lmplot(x='lon', y='lat', data=df, hue='model_type', fit_reg=False, scatter_kws={"s": 1})  # hue='model_type'
+    sns.lmplot(x='lon', y='lat', data=df, hue='road', fit_reg=False, scatter_kws={"s": 1})
+    sns.lmplot(x='lon', y='lat', data=df, hue='model_type', fit_reg=False, scatter_kws={"s": 1})
     plt.show()
 
 def combine_data():
@@ -338,6 +335,7 @@ def combine_data():
     df_all_roads = df_all_roads.reset_index()
 
     make_id_once(df_all_roads)
+    get_name(df_all_roads)
     complete_intersections(df_all_roads)
     make_figure(df_all_roads)
     save_data(df_all_roads)
