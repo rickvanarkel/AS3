@@ -7,7 +7,6 @@ from collections import defaultdict
 import random
 import networkx as nx
 
-
 # ---------------------------------------------------------------
 def set_lat_lon_bound(lat_min, lat_max, lon_min, lon_max, edge_ratio=0.02):
     """
@@ -57,7 +56,6 @@ class BangladeshModel(Model):
 
     step_time = 1
 
-
     def __init__(self, seed=None, x_max=500, y_max=500, x_min=0, y_min=0, scenario = 0, G= None, filename= None):
 
         self.schedule = BaseScheduler(self)
@@ -77,7 +75,6 @@ class BangladeshModel(Model):
         Creates a parameter for setting the scenario number!
         '''
         self.scenario = scenario
-
         self.generate_model()
 
     def generate_model(self):
