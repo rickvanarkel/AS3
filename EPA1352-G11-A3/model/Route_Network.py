@@ -48,11 +48,17 @@ def create_graph(G):
     nx.draw_networkx(G, pos=pos, node_size=10, with_labels=False) # draw nodes and edges
     #nx.draw_networkx_labels(G, pos=pos)  # draw node labels/names
 
+    # Get the nodes with more than 2 edges
+    nodes_with_more_than_2_edges = [node for node, degree in dict(G.degree()).items() if degree > 2]
+    nx.draw_networkx_nodes(G, pos, nodelist=nodes_with_more_than_2_edges, node_color='r', node_size=50)
+
     # draw edge weights
     # labels = nx.get_edge_attributes(G, 'weight')
     # nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
     plt.axis()
     plt.show()
+
+
 
 # file_name = '../data/demo_all_roads_compact_LB.csv'
 # df = pd.read_csv(file_name)
@@ -60,4 +66,7 @@ def create_graph(G):
 # road_dict = make_points_edges(df)
 # G = make_networkx(road_dict, df)
 # create_graph(G)
+
+
+
 

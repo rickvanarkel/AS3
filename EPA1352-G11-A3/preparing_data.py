@@ -132,7 +132,6 @@ def complete_intersections(df_road):
             df_road.loc[df_road['id'] == i, 'lon'] = gdf_match_intersection.loc[gdf_match_intersection['id'] == i, 'lon'].values[0]
             df_road.loc[df_road['id'] == i, 'lat'] = gdf_match_intersection.loc[gdf_match_intersection['id'] == i, 'lat'].values[0]
 
-
     list_of_roads = gdf_match_intersection['road_id'].tolist()
     road = 0
     for i in list_of_roads:
