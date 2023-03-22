@@ -31,7 +31,7 @@ def make_points_edges(df):
 
     return road_dict
 
-def make_networkx(road_dict):
+def make_networkx(road_dict, df):
     G = nx.Graph()
 
     for roads in df['road'].unique():
@@ -57,8 +57,11 @@ def make_networkx(road_dict):
     plt.axis()
     plt.show()
 
-file_name = '../data/demo-4.csv'
-df = pd.read_csv(file_name)
+    return G
 
-road_dict = make_points_edges(df)
-make_networkx(road_dict)
+# file_name = '../data/demo-4.csv'
+# df = pd.read_csv(file_name)
+#
+# road_dict = make_points_edges(df)
+# G = make_networkx(road_dict)
+

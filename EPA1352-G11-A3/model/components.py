@@ -1,6 +1,7 @@
 from mesa import Agent
 from enum import Enum
 import random
+import networkx as nx
 
 # ---------------------------------------------------------------
 class Infra(Agent):
@@ -222,7 +223,7 @@ class Vehicle(Agent):
         self.location = generated_by
         self.location_offset = location_offset
         self.pos = generated_by.pos
-        self.path_ids = path_ids
+        self.path_ids = self.set_path()
         # default values
         self.state = Vehicle.State.DRIVE
         self.location_index = 0
@@ -241,6 +242,7 @@ class Vehicle(Agent):
         """
         Set the origin destination path of the vehicle
         """
+
         self.path_ids = self.model.get_route(self.generated_by.unique_id)
 
     def step(self):
@@ -288,7 +290,7 @@ class Vehicle(Agent):
             # arrive at the sink
             self.arrive_at_next(next_infra, 0)
             self.removed_at_step = self.model.schedule.steps
-            self.model.reporter.loc[self.unique_id] = [self.removed_at_step - self.generated_at_step]
+            #self.model.reporter.loc[self.unique_id] = [self.removed_at_step - self.generated_at_step]
             self.location.remove(self)
             return
         elif isinstance(next_infra, Bridge):

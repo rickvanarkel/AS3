@@ -2,6 +2,7 @@ import pandas as pd
 import random
 import model
 from components import Source
+import networkx as nx
 
 '''
 This file is used to run the simulation model and get the corresponding results. 

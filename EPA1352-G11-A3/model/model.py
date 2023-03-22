@@ -5,7 +5,9 @@ from components import Source, Sink, SourceSink, Bridge, Link, Intersection
 import pandas as pd
 from collections import defaultdict
 import random
-import NetworkX as NX
+import networkx as nx
+from Route_Network import make_points_edges
+from Route_Network import make_networkx
 
 
 # ---------------------------------------------------------------
@@ -64,13 +66,10 @@ class BangladeshModel(Model):
 
         self.schedule = BaseScheduler(self)
         self.running = True
-        self.path_ids_dict = defaultdict(lambda: pd.Series())
+        #self.path_ids_dict = defaultdict(lambda: pd.Series())
         self.space = None
         self.sources = []
         self.sinks = []
-
-        global truck_counter
-        truck_counter = 0
 
         self.reporter = pd.DataFrame(columns=["Name", "Time"])
         self.reporter.set_index("Name", inplace=True)
@@ -90,8 +89,8 @@ class BangladeshModel(Model):
         """
 
         df = pd.read_csv(self.file_name)
-        road_dict = NX.make_points_edges(df)
-        G = NX.make_networkx(road_dict)
+        road_dict = make_points_edges(df)
+        self.G = make_networkx(road_dict, df)
 
         # a list of names of roads to be generated based on the different unique values in the "Road" column of the df
         roads = df['road'].unique()
@@ -111,27 +110,27 @@ class BangladeshModel(Model):
 
         df_objects_all = []
         for road in roads:
-            # Select all the objects on a particular road in the original order as in the cvs
-            df_objects_on_road = df[df['road'] == road]
-
-            if not df_objects_on_road.empty:
-                df_objects_all.append(df_objects_on_road)
-
-                """
-                Set the path 
-                1. get the serie of object IDs on a given road in the cvs in the original order
-                2. add the (straight) path to the path_ids_dict
-                3. put the path in reversed order and reindex
-                4. add the path to the path_ids_dict so that the vehicles can drive backwards too
-                """
-                path_ids = df_objects_on_road['id']
-                path_ids.reset_index(inplace=True, drop=True)
-                self.path_ids_dict[path_ids[0], path_ids.iloc[-1]] = path_ids
-                self.path_ids_dict[path_ids[0], None] = path_ids
-                path_ids = path_ids[::-1]
-                path_ids.reset_index(inplace=True, drop=True)
-                self.path_ids_dict[path_ids[0], path_ids.iloc[-1]] = path_ids
-                self.path_ids_dict[path_ids[0], None] = path_ids
+        #     # Select all the objects on a particular road in the original order as in the cvs
+             df_objects_on_road = df[df['road'] == road]
+        #
+             if not df_objects_on_road.empty:
+                 df_objects_all.append(df_objects_on_road)
+        #
+        #         """
+        #         Set the path
+        #         1. get the serie of object IDs on a given road in the cvs in the original order
+        #         2. add the (straight) path to the path_ids_dict
+        #         3. put the path in reversed order and reindex
+        #         4. add the path to the path_ids_dict so that the vehicles can drive backwards too
+        #         """
+        #         path_ids = df_objects_on_road['id']
+        #         path_ids.reset_index(inplace=True, drop=True)
+        #         self.path_ids_dict[path_ids[0], path_ids.iloc[-1]] = path_ids
+        #         self.path_ids_dict[path_ids[0], None] = path_ids
+        #         path_ids = path_ids[::-1]
+        #         path_ids.reset_index(inplace=True, drop=True)
+        #         self.path_ids_dict[path_ids[0], path_ids.iloc[-1]] = path_ids
+        #         self.path_ids_dict[path_ids[0], None] = path_ids
 
         # put back to df with selected roads so that min and max and be easily calculated
         df = pd.concat(df_objects_all)
@@ -206,17 +205,16 @@ class BangladeshModel(Model):
             sink = self.random.choice(self.sinks)
             if sink is not source:
                 break
-        return self.path_ids_dict[source, sink]
+
+        return sink
 
     # TODO
     def get_route(self, source):
-        return self.get_straight_route(source)
 
-    def get_straight_route(self, source):
-        """
-        pick up a straight route given an origin
-        """
-        return self.path_ids_dict[source, None]
+        sink = self.get_random_route(source)
+        route = nx.shortest_path(self.G, source=source, target=sink, method='dijkstra')
+
+        return route
 
     def step(self):
         """
