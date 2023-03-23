@@ -3,10 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import warnings
 import seaborn as sns
-from scipy.spatial.distance import cdist
-import networkx as nx
 import geopandas as gpd
-from shapely.geometry import Point
 from scipy.spatial import cKDTree
 
 warnings.filterwarnings('ignore')
@@ -18,25 +15,31 @@ df_roads = pd.read_csv(roads_link)
 df_bridges = pd.read_excel(bridges_link)
 
 def filter_roads():
-    '''
-    Changes the column names in the right format,
-    Determines all the roads available,
-    Filters the roads to only behold roads >25km
+    """
+    Adds columns needed for modelling to the dataframe
+    Identifies all the roads available in the dataframe
+    Filters the roads on the condition that the length is >25km
+    Filters the roads based on the casus
     Calls prepare_data for all the separate roads
-    '''
-    change_column_names(df_roads)
+    """
+
+    # Adds columns needed for modelling by calling the function add_columns
+    add_columns(df_roads)
+
+    # Makes a list of unique roads in the dataset
     unique_roads = df_roads.road.unique()
 
     print('All relevant roads are being identified based on length and the casus.')
 
+    # Filters the roads based on the condition that the length needs to be >25km. Appends the relevant roads to a list
     long_roads = []
     for i in unique_roads:
         df_road_temp = df_roads[df_roads['road'] == i]
         if df_road_temp["chainage"].iloc[-1] >= 25:
             long_roads.append(i)
 
+    # Filters the roads based on the casus. Appends the relevant roads to a list
     casus_roads = ['N1', 'N2']
-
     global relevant_roads
     relevant_roads = []
     for i in long_roads:
@@ -48,15 +51,18 @@ def filter_roads():
     print(f'In total there are {len(relevant_roads)} relevant roads found, which are: {relevant_roads}.')
     print(f'The pre-processing of each road is done separately.')
 
+    # Processes all roads individually
     for i in relevant_roads:
         print(f'The road that is pre-processed now, is: {i}.')
         df_road_temp = df_roads[df_roads['road'] == i]
         prepare_data(df_road_temp)
 
-def change_column_names(df_road):
+def add_columns(df_road):
     """
-    The column names are updated and empty columns are generated for the information needed for modeling
+    Adds empty columns for the information needed for modeling
+    Makes a list of all column names in the dataframe
     """
+    # Add new columns
     df_road['model_type'] = ''
     df_road['length'] = np.nan
     df_road['id'] = ''
@@ -66,6 +72,7 @@ def change_column_names(df_road):
     df_road['road_name'] = ''
     df_road['bridge_length'] = np.nan
 
+    # Makes a list of all column names
     global column_names
     column_names = []
     for i in df_road:
@@ -75,15 +82,17 @@ def change_model_type(df_road):
     """
     This function checks if the road object is a bridge and replaces it with 'bridge'
     Thereby replaces all other objects in 'link'
-    The first and last object are given the model type 'source' and 'sink'
+    The first and last object are given the model type 'sourcesink' or 'intersection', based on the network
     """
-    bridge_types = ['Bridge', 'Culvert'] # in doubt over: CrossRoad, RailRoadCrossing
-
+    # Recognises and sets model type to bridge
+    bridge_types = ['Bridge', 'Culvert']
     for i in bridge_types:
         df_road.loc[df_road['type'].str.contains(i), 'model_type'] = 'bridge'
 
+    # Recognises and sets model type to link
     df_road.loc[~df_road['model_type'].str.contains('bridge'), 'model_type'] = 'link'
 
+    # Recognises and sets model type to sourcesink or intersection
     if (df_road['road'] == 'N1').any():
         df_road['model_type'].iloc[0] = 'sourcesink'
         df_road['model_type'].iloc[-1] = 'sourcesink'
@@ -104,27 +113,30 @@ def change_model_type(df_road):
         df_road['model_type'].iloc[-1] = 'intersection'
 
 def complete_intersections(df_road):
-    '''
+    """
     Locates the potential points of intersection, where the road type indicates a 'SideRoad'
     Connects the intersections with the potential intersections with a nearest neighbor method
     Harmonizes the id's of the found intersection matches for different roads
     Updates the 'potential intersections' into 'intersection' or back to 'link'
-    '''
-
+    """
+    # recognises and sets model type to potential intersection
     df_road.loc[df_road['type'].str.contains('SideRoad', na=False), 'model_type'] = 'potential intersection'
 
-    # Create a GeoDataFrame from the original DataFrame
+    # Makes a gdf from the df
     gdf_road = gpd.GeoDataFrame(df_road, geometry=gpd.points_from_xy(df_road['lon'], df_road['lat']))
 
-    # Filter the GeoDataFrame to only include points with model_type = 'intersection'
+    # Filters to only include points with model_type = 'intersection'
     intersection_points = gdf_road[gdf_road['model_type'] == 'intersection']
     intersection_points = intersection_points.drop(['id'], axis = 1)
 
+    # Filters to only include points with model_type = 'potential intersection'
     potential_points = gdf_road[gdf_road['model_type'] == 'potential intersection']
     potential_points = potential_points.drop(['road_id'], axis=1)
 
+    # Find the closest match for each intersection from the potential intersections
     gdf_match_intersection = ckdnearest(intersection_points, potential_points)
 
+    # Integrating the outcomes from the match process into the df
     list_of_ids = gdf_match_intersection['id'].tolist()
     for i in list_of_ids:
         if (df_road['id'] == i).any():
@@ -139,27 +151,23 @@ def complete_intersections(df_road):
             df_road.loc[df_road['road_id'] == i, 'id'] = list_of_ids[road]
         road += 1
 
+    # Puts the model type of roads without a match back to link
     df_road.loc[df_road['model_type'].str.contains('potential intersection', na=False), 'model_type'] = 'link'
 
+    # Saves the match data
     gdf_match_intersection.to_csv('./data/check_location_intersections.csv')
 
 def ckdnearest(gdA, gdB):
-    '''
-    Voorbeeldsite: ??
-
-
-    Uit ChatGPT:
-
-    This function ckdnearest(gdA, gdB) appears to perform a nearest neighbor search between two sets of spatial data represented as GeoDataFrames using the cKDTree algorithm from the scipy library. The input gdA and gdB are two GeoDataFrames with geometry columns containing Point objects.
-
-    The function first extracts the coordinates of the Point objects from gdA and gdB using a lambda function and the apply method, and then constructs a KD-tree (btree) from the coordinates in gdB using cKDTree.
-
-    The query method of the KD-tree is used to find the nearest neighbor of each point in gdA. The k parameter is set to 1 to return the closest neighbor. The method returns two arrays, dist and idx, where dist contains the distances between the nearest neighbors, and idx contains the indices of the nearest neighbors in gdB.
-
-    The function then creates a new GeoDataFrame (gdf) by concatenating gdA, the nearest neighbors in gdB (gdB_nearest), and the distance between them (dist). The loc method is used to select only certain columns from gdB (nearest_information), and the reset_index method is used to reset the index of gdB_nearest.
-
-    Finally, the function returns the new GeoDataFrame gdf.
-    '''
+    """
+    Performs a nearest neighbor search between two geodata sets
+    Extracts the coordinates of the Point objects from gdA and gdB using a lambda function and the apply method
+    Constructs a KD-tree (btree) from the coordinates in gdB using cKDTree
+    Is used to find the nearest neighbor of each point in gdA.
+    The k parameter is set to 1 to return the closest neighbor.
+    Dist contains the distances between the nearest neighbors
+    The function then concats gdA, the nearest neighbors in gdB (gdB_nearest), and the distance between them (dist).
+    The loc method is used to select only certain columns from gdB (nearest_information)
+    """
 
     nearest_information = ['id', 'model_type'] # 'road_id',
 
@@ -188,16 +196,6 @@ def standardize_bridges(df_road):
     # Drop bridge end from the roads file
     df_road.loc[df_road['gap'].str.contains('BE', na=False), 'model_type'] = 'link'
     df_road.loc[df_road['gap'].str.contains('BE', na=False), 'condition'] = np.nan
-
-    '''
-    A beginning to only keep one side of the road for connecting it to the bridges. We did not proceed with this.
-    The differences are little, and now the first match is used. Sometimes where was no distincion between left and right
-    There were also a lot of inconsistencies. The code does NOT work yet. 
-    
-    one_way_roads = ['(R)', 'Right', 'right', 'Right']
-    for i in one_way_roads:
-        df_bridgesN1.drop(df_bridgesN1[df_bridgesN1['name'].str.contains(i)].index, inplace=True)
-    '''
 
 def make_infra_id(df_road):
     # Make bridge_id and road_id based on road and LRP
@@ -263,7 +261,6 @@ def get_name(df_road):
     '''
     Fills in the name of the road part, based on the model type
     '''
-    #df_road['name'] = df_road['model_type']
 
     sosicounter = 1
     for i, row in df_road.iterrows():
@@ -272,7 +269,6 @@ def get_name(df_road):
         else:
             df_road.at[i, 'name'] = f'SoSi{sosicounter}'
             sosicounter += 1
-            print(sosicounter)
 
 def get_road_name(df_road):
     '''
@@ -339,7 +335,6 @@ def combine_data():
     complete_intersections(df_all_roads)
     make_figure(df_all_roads)
     save_data(df_all_roads)
-    #make_upperbound(df_all_roads)
 
     print('The data is pre-processed and available for the next step.')
 
@@ -354,21 +349,6 @@ def save_data(df):
     # Make compact datafile and export to csv
     df_all_roads_compact = df.loc[:, model_columns]
     df_all_roads_compact.to_csv('./data/demo_all_roads_compact_LB.csv')
-
-def make_upperbound(df):
-    '''
-    Sorts the bridges df by the highest condition, and makes a new match between the bridges and roads.
-    '''
-    # sort the bridges file by highest condition
-    df_bridges_sorted = df_bridges.sort_values(by='condition', ascending=False)
-
-    # refill the column by connecting the two infra files
-    connect_infra(df_bridges_sorted, df)
-
-    # save the files
-    df.to_csv('./data/demo_all_roads_UB.csv')
-    df_all_roads_compact = df.loc[:, model_columns]
-    df_all_roads_compact.to_csv('./data/demo_all_roads_compact_UB.csv')
 
 # Run the prepare data function
 filter_roads() # calls prepare_data function
