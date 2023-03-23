@@ -141,7 +141,7 @@ def complete_intersections(df_road):
 
     df_road.loc[df_road['model_type'].str.contains('potential intersection', na=False), 'model_type'] = 'link'
 
-    gdf_match_intersection.to_csv('check_dist.csv')
+    gdf_match_intersection.to_csv('./data/check_location_intersections.csv')
 
 def ckdnearest(gdA, gdB):
     '''
