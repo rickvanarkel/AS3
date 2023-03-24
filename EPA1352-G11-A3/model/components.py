@@ -58,7 +58,9 @@ class Bridge(Infra):
         self.state = state
         self.length = length
 
-
+    """
+    This function makes sure there is a delay time on the bridge when it is broken
+    """
     def get_delay_time(self):
         delay_time = 0
         if self.state == 'broken':

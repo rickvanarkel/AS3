@@ -95,7 +95,7 @@ class BangladeshModel(Model):
         which parameters for the bridge quality should be used. 
         """
 
-        # Reimport the CSV file as a new dictionary
+        # Import the scenario CSV file as a new dictionary
         scenario_df = pd.read_csv('../data/scenario_dict.csv', index_col='Scenario')
         for scenario, row in scenario_df.iterrows():
             self.scenario_dict[scenario] = row.to_dict()
@@ -186,6 +186,10 @@ class BangladeshModel(Model):
         return sink
 
     def get_route(self, source):
+        """
+        Creates a route list based on the source and sink nodes with dijkstras algorithm
+        from the previously created networkX model
+        """
         sink = self.get_random_route(source)
         if (sink, source) not in self.path_ids_dict:
             route = nx.shortest_path(self.G, source=source, target=sink, method='dijkstra')

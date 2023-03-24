@@ -38,6 +38,8 @@ nscenario = 5
 niteration = 10
 iteration = 0
 
+exec(open("preparing_data.py").read())
+
 seeds = []
 with open('../data/seeds.csv', 'r') as file:
     reader = csv.reader(file)

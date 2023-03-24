@@ -5,9 +5,14 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-def add_edge_to_graph(G, e1, e2, w):
-    G.add_edge(e1, e2, weight=w)
 
+"""
+This function creates a dictionary which contains all roads as a key and a list with three lists as a output
+
+- temp_points = Contains de coordinates of the points
+- temp_edges = Contains all edges in the right order
+- point_id = Contains all the node ID's in the right order
+"""
 def make_points_edges(df):
     road_dict = {}
     roads = df['road'].unique()
@@ -29,6 +34,9 @@ def make_points_edges(df):
         road_dict[road_type] = (temp_points, temp_edges, point_ids)
     return road_dict
 
+"""
+This function uses the road dict to add all points as nodes and then sets edges for each of the nodes
+"""
 def make_networkx(road_dict, df):
     G = nx.Graph()
     for roads in df['road'].unique():
@@ -42,6 +50,9 @@ def make_networkx(road_dict, df):
             G.add_edge(edges[i][0], edges[i][1], weight = edges[i][2])
     return G
 
+"""
+This function is used to create the visual of the networkx graph
+"""
 def create_graph(G):
     pos = nx.get_node_attributes(G, 'pos')
     nx.draw_networkx(G, pos=pos, node_color='k', with_labels=False)
@@ -58,14 +69,6 @@ def create_graph(G):
     plt.axis()
     plt.show()
 
-
-
-# file_name = '../data/demo_all_roads_compact_LB.csv'
-# df = pd.read_csv(file_name)
-#
-# road_dict = make_points_edges(df)
-# G = make_networkx(road_dict, df)
-# create_graph(G)
 
 
 

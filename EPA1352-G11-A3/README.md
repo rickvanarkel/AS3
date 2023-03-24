@@ -1,25 +1,66 @@
-# Example README File
+# Simple Transport Model Demo in MESA
 
-Created by: EPA1352 Group xx 
+Created by: EPA1352 Group 11* 
 
-| Name    | Student Number |
-|:-------:|:--------|
-| Mary White  | 1234567 | 
-| David Brown | 7654321 |
+|      Name      | Student Number |
+|:--------------:|:---------------|
+| Rick van Arkel | 4974859        | 
+|  Laura Drost   | 5066034        |
+|   Inge Faber   | 4457617        |
+| Daan de Jager  | 4702972        |
+| Susan Ruinaard | 4650441        |
 
+Date: 24-03-2023
 
 ## Introduction
 
-Every project should have a README file to help a first-time user understand what it is about and how they might be able to use it. This file is where you (as a group) shall provide the information needed by the TAs to evaluate and grade your work. 
+This model is build to analyze the infrastructure in Bangladesh. The aim of the model itself is to simulate trucks traveling along the infrastructure network of Bangladesh. Subsequently, the navigability of these roads can be tested. This model focuses on the N1 en N2 roads. In the simulation a truck starts driving the N1 every 5 minutes with an average speed of 48 km/h. When it crosses a bridge the truck can be delayed with a certain possiblity and time that is varied by the scenarios, the bridge length and the bridge conditions. Every run simulates 5 times 24 hours. After each run an csv file is given as output containing the average time in minutes it took trucks to drive the N1. Each truck is assigned a random sink target node. Based on dijkstras algorith the shortest path is calculated. 
+ 
 
-If you are looking for information about the Demo model of Assignment 3, navigate to the [model/README.md](model/README.md) in the [model](model) directory. Have **fun** modeling in Python! 
 
 ## How to Use
 
-Include whatever you think is necessary for someone to understand your work. The README file is usually the first file someone will see and open. It doesn't need to explain what might be obvious, but it should point out the most important things for someone looking at your work. For example, how to launch your program, what are the main files, where to find them, etc. 
+* Launch the simulation model 
+```
+    $ python G11_A2_run.py
+```
 
-### Format
+For further use of the models, please refer to the function descriptions on how to change scenarios and input files. 
 
-Most README files for data or software projects are now written in Markdown format, like this document. There are some different flavours, but they are easy to write. See here for more information https://www.markdownguide.org/basic-syntax 
+## Files
+* [model_run.py](.../model_run.py): Contains a model to read the orginial data and execute `preparing_data.py` and `model_run.py`
+* [preparing_data.py](.../preparing_data.py): Contains the model to prepare the data, thus merges the files _road.csv and BMMS_overview.xlxs. The models output is a file containing the components needed for the `components.py`
+* [model.py](../model.py): Contains the model `BangladeshModel` which is a subclass of Mesa `Model`. It reads a `csv` file with specific format for (transport) model generation. (See the README in the `data` directory for data format.) In addition to dynamic behavior, each model component instance (i.e., object) also has geo-location variables, i.e. latitude and longitude in Decimal Degrees (DD). The given bounds of the latitude and longitude of all objects are translated into the bounds of the HTML5 canvas, which is used in case the visualization is launched. 
 
-Most IDEs can render Markdown files directly. 
+    In this file, you modify the model generation and add your own routines.
+
+* [components.py](../components.py): Contains the model component definitions for the (main) model. Check the file carefully to see which components are already defined. 
+  
+    In this file, you modify and add your own components.
+
+* [model_viz.py](../model_viz.py): Sets up the visualization; uses the `SimpleCanvas` element defined. Calls the model. Run the visualization server.
+
+    In this file, you define simple visualization.
+
+* [model_run.py](../model_run.py): Sets up the model run (conditions). Calls the model. Run the simulation without visualization. 
+
+    In this file, you define model batch runs.
+
+* [Route_Network.py](../Route_Network.py): Contains all the networkX related functions.
+
+    In this file, the netowrkX model is created.
+  
+* [ContinuousSpace](ContinuousSpace): The directory contains files needed to visualize Python3 Mesa models on a continuous canvas with geo-coordinates, a functionality not contained in the current Mesa package. 
+  
+    Editing files in this directory is NOT recommended for our assignment. 
+ 
+* [ContinuousSpace/SimpleContinuousModule.py](ContinuousSpace/SimpleContinuousModule.py): Defines ``SimpleCanvas``, the Python side of a custom visualization module for drawing objects with continuous positions. This is a slight adaptation of the Flocker example provided by the Mesa project. 
+  
+    Editing this file is NOT recommended for our assignment. 
+  
+* [ContinuousSpace/simple_continuous_canvas.js](ContinuousSpace/simple_continuous_canvas.js): JavaScript side of the ``SimpleCanvas`` visualization module. It takes the output generated by the Python ``SimpleCanvas`` element and draws it in the browser window via HTML5 canvas. It can draw circles and rectangles. Both can have text annotation. This file is an adaptation of the Flocker example provided by the Mesa project. 
+  
+    Editing this file is NOT recommended for our assignment. 
+ 
+
+(*The basis are constructed by the course author)
